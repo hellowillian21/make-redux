@@ -1,28 +1,42 @@
-const appState = {
-  title: {
-    text: '这是标题',
-    color: 'red'
-  },
-  content: {
-    text: '这是内容',
-    color: 'blue'
-  }
-}
+// const appState = {
+//   title: {
+//     text: '这是标题',
+//     color: 'red'
+//   },
+//   content: {
+//     text: '这是内容',
+//     color: 'blue'
+//   }
+// }
 
-function createStore(state, stateChanger) {
+function createStore(stateChanger) {
+  let state = null
   // 发布订阅模式
   const listeners = []
   const subscribe = (listener) => listeners.push(listener)
 
   const getState = () => state
   const dispath = (action) => {
-    state = stateChanger(state, action) // 覆盖原对象
+    state = reducer(state, action) // 覆盖原对象
     listeners.forEach((listener) => listener())
   }
+  dispath({}) // 初始化state
   return {getState, dispath, subscribe}
 }
 
-function stateChanger(state, action) {
+function reducer(state, action) {
+  if(!state) {
+    return {
+      title: {
+        text: '这是标题',
+        color: 'red'
+      },
+      content: {
+        text: '这是内容',
+        color: 'blue'
+      }
+    }
+  }
   switch (action.type) {
     case 'UPDATE_TITLE_TEXT':
       return { // 构建新对象并返回
@@ -69,7 +83,7 @@ function renderContent(newContent, oldContent = {}) {
   contentDOM.style.color = newContent.color
 }
 
-const store = createStore(appState, stateChanger)
+const store = createStore(reducer)
 let oldState = store.getState() // 缓存旧的state
 
 store.subscribe(() => {
