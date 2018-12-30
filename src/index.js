@@ -10,12 +10,13 @@ const appState = {
 }
 
 function createStore(state, stateChanger) {
+  // 发布订阅模式
   const listeners = []
   const subscribe = (listener) => listeners.push(listener)
 
   const getState = () => state
   const dispath = (action) => {
-    stateChanger(state, action)
+    state = stateChanger(state, action) // 覆盖原对象
     listeners.forEach((listener) => listener())
   }
   return {getState, dispath, subscribe}
@@ -24,58 +25,60 @@ function createStore(state, stateChanger) {
 function stateChanger(state, action) {
   switch (action.type) {
     case 'UPDATE_TITLE_TEXT':
-      state.title.text = action.text
-      break
+      return { // 构建新对象并返回
+        ...state,
+        title: {
+          ...state.title,
+          text: action.text
+        }
+      }
     case 'UPDATE_TITLE_COLOR':
-      state.title.color = action.color
-      break
+      return {
+        ...state,
+        title: {
+          ...state.title,
+          color: action.color
+        }
+      }
     default:
-      break
+      return state // 没有修改，返回原来的对象
   }
 }
 
-
-
-// dispath负责修改数据
-// function dispath(action) {
-//   switch (action.type) {
-//     case 'UPDATE_TITLE_TEXT':
-//       appState.title.text = action.text
-//       break
-//     case 'UPDATE_TITLE_COLOR':
-//     appState.title.color = action.color
-//       break
-//     default:
-//       break
-//   }
-// }
-
-function renderApp(appState) {
-  renderTitle(appState.title)
-  renderContent(appState.content)
+function renderApp(newAppState, oldAppState = {}) {
+  // 没有数据变化就不渲染
+  if(newAppState === oldAppState) return
+  console.log('render app...')
+  renderTitle(newAppState.title, oldAppState.title)
+  renderContent(newAppState.content, oldAppState.content)
 }
 
-function renderTitle(title) {
+function renderTitle(newTitle, oldTitle = {}) {
+  if(newTitle === oldTitle) return
+  console.log('render title...')
   const titleDOM = document.getElementById('title')
-  titleDOM.innerHTML = title.text
-  titleDOM.style.color = title.color
+  titleDOM.innerHTML = newTitle.text
+  titleDOM.style.color = newTitle.color
 }
 
-function renderContent(content) {
+function renderContent(newContent, oldContent = {}) {
+  if(newContent === oldContent) return
+  console.log('render content...')
   const contentDOM = document.getElementById('content')
-  contentDOM.innerHTML = content.text
-  contentDOM.style.color = content.color
+  contentDOM.innerHTML = newContent.text
+  contentDOM.style.color = newContent.color
 }
-
-// renderApp(appState) // 首次渲染页面
-// dispath({type: 'UPDATE_TITLE_TEXT', text: '修改了标题'})
-// dispath({type: 'UPDATE_TITLE_COLOR', color: 'blue'})
-// renderApp(appState) // 把新的数据渲染到页面上
 
 const store = createStore(appState, stateChanger)
-store.subscribe(() => renderApp(store.getState()))
+let oldState = store.getState() // 缓存旧的state
+
+store.subscribe(() => {
+  const newState = store.getState()
+  // 把新旧的State传进去渲染
+  renderApp(newState, oldState)
+  oldState = newState
+})
 
 renderApp(store.getState()) // 首次渲染页面
 store.dispath({type: 'UPDATE_TITLE_TEXT', text: '修改了标题'})
 store.dispath({type: 'UPDATE_TITLE_COLOR', color: 'blue'})
-// renderApp(store.getState()) // 把新的数据渲染到页面上
